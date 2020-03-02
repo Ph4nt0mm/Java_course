@@ -1,5 +1,6 @@
 package ru.hse.cs.java2020.task01;
 
+<<<<<<< HEAD
 import java.text.SimpleDateFormat;
 import java.io.File;
 import java.util.ArrayList;
@@ -177,5 +178,10 @@ public class Main {
         System.out.println("Total folder size: " + totalSize / kbdiv + " kbytes\nWork time: "
                 + ((System.currentTimeMillis() - startTime) / thouthand)  + "s "
                 + ((System.currentTimeMillis() - startTime) % thouthand) + "ms");
+=======
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello World");
+>>>>>>> parent of b37c2e7... da pushel ti nahui so svoimi obiazatelnimi messedgami, prosto blyd
     }
 }
