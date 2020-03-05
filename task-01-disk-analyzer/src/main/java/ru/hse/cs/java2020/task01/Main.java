@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
-import java.util.PriorityQueue;
+import java.util.ArrayDeque;
 import java.util.Collections;
 
 public class Main {
@@ -71,7 +71,7 @@ public class Main {
     }
 
     private static Returning getContaining(File toCheck) {
-        Queue<File> containing = new PriorityQueue<>();
+        Queue<File> containing = new ArrayDeque<>();
         Returning ret = new Returning(toCheck);
 
         Collections.addAll(containing, toCheck.listFiles());
@@ -103,7 +103,8 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        Queue<File> containing = new PriorityQueue<>();
+
+        Queue<File> containing = new ArrayDeque<>();
         List<Returning> resultList = new ArrayList<>();
         List<File> biggestFiles = new ArrayList<>();
         final long startTime = System.currentTimeMillis();
@@ -113,6 +114,7 @@ public class Main {
         if (args.length ==  2) {
             countMax = Integer.parseInt(args[1]);
         }
+
 
         Collections.addAll(containing, rootLib.listFiles());
 
