@@ -7,6 +7,5 @@ public interface EvictionPolicy {
     public String put(Long key, String value) throws IOException;
     public void OpenFolder(String path);
     public void SetSizes(Long cacheSz, Long folderSz);
-    public Long getFreeFileN();
     public void test () throws IOException;
 }

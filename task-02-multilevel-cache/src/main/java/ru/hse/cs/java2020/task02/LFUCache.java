@@ -250,7 +250,7 @@ public class LFUCache implements EvictionPolicy {
     }
 
     //Done, work
-    public Long getFreeFileN() {
+    private Long getFreeFileN() {
         if (filesWithOne.size() > 0)
             return filesWithOne.poll();
         lastFileN++;
@@ -298,17 +298,6 @@ public class LFUCache implements EvictionPolicy {
         timeBlock.countLines = countLines(value);
 
         int todo = clearData(timeBlock);
-        if (todo == 2) {
-            return null;
-        } else if (todo == 1) {
-            discSize += timeBlock.text.length();
-            timeBlock.text = null;
-        } else {
-            discSize += timeBlock.text.length();
-            cacheSize += timeBlock.text.length();
-        }
-        discSize += 4;
-        cacheSize += 4;
 
         timeBlock.fileN = getFreeFileN();
 
@@ -327,6 +316,18 @@ public class LFUCache implements EvictionPolicy {
             countCalls.remove(key);
         }
         addStringToFile(timeBlock);
+
+        if (todo == 2) {
+            return null;
+        } else if (todo == 1) {
+            discSize += timeBlock.text.length();
+            timeBlock.text = null;
+        } else {
+            discSize += timeBlock.text.length();
+            cacheSize += timeBlock.text.length();
+        }
+        discSize += 4;
+        cacheSize += 4;
 
         // put in cache
         cacheMap.put(key, timeBlock);
