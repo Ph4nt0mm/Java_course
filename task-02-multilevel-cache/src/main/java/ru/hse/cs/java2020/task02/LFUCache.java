@@ -2,12 +2,14 @@ package ru.hse.cs.java2020.task02;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class LFUCache implements EvictionPolicy {
-    private HashMap<Long, dataBlock> cacheMap; //cache K and V
-    private HashMap<Long, Long> countCalls; //K and counters
-    private HashMap<Long, LinkedHashSet<Long>> lists; //Counter and item list
-    private LinkedList<Long> filesWithOne; // pair key - file
+    private HashMap<Long, dataBlock> cacheMap; //cache key - value
+    private HashMap<Long, Long> countCalls; // key - counter
+    private HashMap<Long, LinkedHashSet<Long>> lists; // Count calls - item list
+    private LinkedList<Long> filesWithOne; // N of files
     private ArrayList<Long> arryaOfCountCalls; // pair key - file
     private Long lastFileN;
     private File folder;
@@ -21,11 +23,6 @@ public class LFUCache implements EvictionPolicy {
         public Long key;
         public Long countLines;
         public String text;
-        dataBlock(Long n, String t) {
-            fileN = n;
-            countLines = countLines(t);
-            text = t;
-        }
         dataBlock() {}
     }
 
@@ -51,14 +48,12 @@ public class LFUCache implements EvictionPolicy {
         // Открываем собсно папку
         folder = new File(path);
 
-        // Iдем по всем файлам в нем
-
+        // дем по всем файлам в нем
         for (File i : folder.listFiles()) {
             // Сюды читаем
             dataBlock timeBlock = new dataBlock();
             try (Scanner scanner = new Scanner(i)) {
                 long counter = 0;
-                System.out.println(i.getPath());
                 String nums = scanner.nextLine();
 
                 // Считываем до конца файла, null - не смогли считать
@@ -102,6 +97,8 @@ public class LFUCache implements EvictionPolicy {
     public void SetSizes(Long cacheSz, Long folderSz) {
         cacheSizeMax = cacheSz;
         discSizeMax = folderSz;
+        cacheSize = 0L;
+        discSize = 0L;
     }
 
     //Done work well
@@ -118,14 +115,14 @@ public class LFUCache implements EvictionPolicy {
     private void removeStringFromFile(dataBlock b) throws IOException {
         int listIndex = filesWithOne.indexOf(b.fileN);
         File inputFile = new File(folder.getPath() + "\\" + b.fileN);
-        File tempFile = new File(folder + "\\TempFile.txt");
-        BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
 
         if (listIndex != -1) {
             filesWithOne.remove(listIndex);
             inputFile.delete();
             return;
         }
+        File tempFile = new File(folder + "\\TempFile.txt");
+        BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
 
         filesWithOne.add(b.fileN);
 
@@ -134,37 +131,48 @@ public class LFUCache implements EvictionPolicy {
             String[] infoData = nums.split(" ");
 
             if (Long.parseLong(infoData[0]) == b.key) {
-                for (int i = 0; i < Long.parseLong(infoData[1]); i++)
+                for (int i = 0; i < Long.parseLong(infoData[1]); i++) {
                     scanner.nextLine();
+                }
+                nums = scanner.nextLine();
+                infoData = nums.split(" ");
+                writer.write(nums + "\n");
+            } else {
+                writer.write(nums + "\n");
             }
 
-            nums = scanner.nextLine();
-            infoData = nums.split(" ");
-            writer.write(nums + "\n");
-            for (int j = 0; j < Long.parseLong(infoData[1]); j++) {
+            String s;
+            for (Long j = 0L; j < Long.parseLong(infoData[1]); j++) {
                 if (j != 0)
                     writer.write("\n");
-                writer.write(scanner.nextLine());
+                s = scanner.nextLine();
+                writer.write(s);
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        } catch (NoSuchElementException e) {
+            writer.write("\n");
+            writer.close();
+            inputFile.delete();
+            tempFile.renameTo(inputFile);
+
         }
 
+        writer.write("\n");
         writer.close();
-
         inputFile.delete();
-        System.out.println(tempFile.renameTo(inputFile));
+        tempFile.renameTo(inputFile);
     }
 
     //0 - we just insert
     //1 - we insert without a string
     //2 - we cant insert
     private int clearData(dataBlock b) throws IOException {
-        while (discSize + b.text.length() > discSizeMax) {
+        while (discSize + 4 + b.text.length() > discSizeMax) {
             if (arryaOfCountCalls.size() <= 0)
                 return 2;
             Long evit = lists.get(arryaOfCountCalls.get(0)).iterator().next();
             discSize -= readStringFromFile(cacheMap.get(evit)).length();
+            cacheSize -= 4;
+            cacheSize -= readStringFromFile(cacheMap.get(evit)).length();
             discSize -= 4;
             removeStringFromFile(cacheMap.get(evit));
             // Clear cach
@@ -175,42 +183,44 @@ public class LFUCache implements EvictionPolicy {
 
         Long i = 0L;
 
-        if (cacheSize + b.text.length() > cacheSizeMax) {
+        if (cacheSize + 4 + b.text.length() > cacheSizeMax) {
             Set set = new HashSet(arryaOfCountCalls);
+
             // Delete strings
             for (Iterator<Long> countCallsI = set.iterator(); countCallsI.hasNext() &&
-                    cacheSize + b.text.length() > cacheSizeMax;)
+                    cacheSize + 4 > cacheSizeMax;)
             {
                 Long countCheck = countCallsI.next();
                 for (Iterator<Long> keyI = lists.get(countCheck).iterator(); keyI.hasNext() &&
-                        cacheSize + b.text.length() > cacheSizeMax;)
+                        cacheSize + 4 > cacheSizeMax;)
                 {
-                    if (cacheMap.get(keyI).text != null) {
-                        cacheSize -= cacheMap.get(keyI).text.length();
-                        cacheMap.get(keyI).text = null;
+                    Long clearingKey = keyI.next();
+                    if (cacheMap.get(clearingKey).text != null) {
+                        cacheSize -= cacheMap.get(clearingKey).text.length();
+                        cacheMap.get(clearingKey).text = null;
                     }
                 }
             }
 
             // Delete files
             for (Iterator<Long> countCallsI = set.iterator(); countCallsI.hasNext() &&
-                    cacheSize + b.text.length() > cacheSizeMax;) {
+                    cacheSize + 4 > cacheSizeMax;) {
                 Long countCheck = countCallsI.next();
                 for (Iterator<Long> keyI = lists.get(countCheck).iterator(); keyI.hasNext() &&
-                        cacheSize + b.text.length() > cacheSizeMax;)
+                        cacheSize + 4 > cacheSizeMax;)
                 {
-                    if (cacheMap.get(keyI).text != null) {
-                        cacheSize -= 4;
-                        cacheMap.remove(keyI);
-                        lists.get(arryaOfCountCalls.get(Math.toIntExact(countCheck))).remove(keyI);
-                        arryaOfCountCalls.remove(countCalls.get(keyI));
-                        countCalls.remove(keyI);
-                    }
+                    Long keyClearing = keyI.next();
+                    cacheSize -= 4;
+                    removeStringFromFile(cacheMap.get(keyClearing));
+                    cacheMap.remove(keyClearing);
+                    lists.get(arryaOfCountCalls.get(arryaOfCountCalls.indexOf(countCheck))).remove(keyClearing);
+                    arryaOfCountCalls.remove(countCalls.get(keyClearing));
+                    countCalls.remove(keyClearing);
                 }
             }
-            if (cacheSize + b.text.length() > cacheSizeMax)
-                return 2;
             if (cacheSize + 4 > cacheSizeMax)
+                return 2;
+            if (cacheSize + 4 + b.text.length() > cacheSizeMax)
                 return 1;
         }
         return 0;
@@ -245,8 +255,14 @@ public class LFUCache implements EvictionPolicy {
 
     //Done, work
     private Long countLines(String str){
-        String[] lines = str.split("\r\n|\r|\n");
-        return (long) lines.length;
+        Matcher m = Pattern.compile("\r\n|\r|\n").matcher(str);
+        Long lines = 1L;
+        while (m.find())
+        {
+            lines++;
+        }
+
+        return (long) lines;
     }
 
     //Done, work
@@ -297,29 +313,36 @@ public class LFUCache implements EvictionPolicy {
         timeBlock.text = value;
         timeBlock.countLines = countLines(value);
 
-        int todo = clearData(timeBlock);
-
-        timeBlock.fileN = getFreeFileN();
-
         String tmp = null;
 
         // return and disk part
         if (cacheMap.containsKey(key)) {
-            if (cacheMap.get(key).text != null)
+            if (cacheMap.get(key).text != null) {
                 tmp = cacheMap.get(key).text;
-            else
+                cacheSize -= tmp.length();
+            } else {
                 tmp = readStringFromFile(cacheMap.get(key));
-
+            }
+            discSize -= 4;
+            discSize -= tmp.length();
+            cacheSize -= 4;
             removeStringFromFile(cacheMap.get(key));
+            cacheMap.remove(key);
             lists.get(countCalls.get(key)).remove(key);
             arryaOfCountCalls.remove(countCalls.get(key));
             countCalls.remove(key);
         }
-        addStringToFile(timeBlock);
+
+        int todo = clearData(timeBlock);
 
         if (todo == 2) {
             return null;
-        } else if (todo == 1) {
+        }
+
+        timeBlock.fileN = getFreeFileN();
+        addStringToFile(timeBlock);
+
+        if (todo == 1) {
             discSize += timeBlock.text.length();
             timeBlock.text = null;
         } else {
@@ -329,7 +352,7 @@ public class LFUCache implements EvictionPolicy {
         discSize += 4;
         cacheSize += 4;
 
-        // put in cache
+        // put in cache and disk
         cacheMap.put(key, timeBlock);
         countCalls.put(key, 1L);
         lists.get(1L).add(key);
@@ -355,6 +378,6 @@ public class LFUCache implements EvictionPolicy {
         cacheMap.put(value.key, value);
         countCalls.put(value.key, 1L);
         arryaOfCountCalls.add(1L);
-        lists.get(1).add(value.key);
+        lists.get(1L).add(value.key);
     }
 }

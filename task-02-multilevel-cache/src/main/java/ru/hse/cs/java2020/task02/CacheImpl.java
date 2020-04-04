@@ -4,11 +4,11 @@ import java.io.IOException;
 
 public class CacheImpl {
         private  EvictionPolicy policy;
-        CacheImpl(long memorySize, long diskSize, String path, EvictionPolicy pol) throws IOException {
+        CacheImpl(long memorySize, long diskSize,
+                  String path, EvictionPolicy pol) throws IOException {
                 policy = pol;
                 policy.SetSizes(memorySize, diskSize);
                 policy.OpenFolder(path);
-                policy.test();
         }
         public String get(Long k) {
                 return policy.get(k);
