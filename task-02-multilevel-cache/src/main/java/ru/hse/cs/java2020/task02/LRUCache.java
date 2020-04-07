@@ -1,44 +1,41 @@
 package ru.hse.cs.java2020.task02;
 
-import java.io.*;
-import java.util.*;
+import java.io.FileNotFoundException;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.NoSuchElementException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class LRUCache implements EvictionPolicy {
     private Node lru;
     private Node mru;
     private Map<Long, Node> container;
-    private HashMap<Long, Long> fileList; // pair key - file
     private File folder;
-    private String pathToDisc;
     private Long lastFileN;
     private LinkedList<Long> filesWithOne; // pair key - file
     private Long cacheSizeMax;
     private Long discSizeMax;
     private Long cacheSize;
     private Long discSize;
-
-    public void test () {
-
-    }
+    private final Long appandingSize = 4L;
 
     // Node for doubly linked list
     class Node {
-        Long fileN;
-        Long countLines;
-        Long key;
-        String text;
-        Node prev;
-        Node next;
+        private Long fileN;
+        private Long countLines;
+        private Long key;
+        private String text;
+        private Node prev;
+        private Node next;
 
-        public Node(Node prev, Node next, Long fileN, Long countLines, Long key, String text) {
-            this.prev = prev;
-            this.next = next;
-            this.countLines = countLines;
-            this.fileN = fileN;
-            this.key = key;
-            this.text = text;
-        }
-        public Node() {
+        Node() {
             this.prev = null;
             this.next = null;
             this.countLines = null;
@@ -51,10 +48,12 @@ public class LRUCache implements EvictionPolicy {
     public LRUCache() {
         lru = new Node();
         mru = lru;
+        lastFileN = 0L;
+        filesWithOne = new LinkedList<>();
         container = new HashMap<Long, Node>();
     }
 
-    public void SetSizes(Long cacheSz, Long folderSz) {
+    public void setSizes(Long cacheSz, Long folderSz) {
         cacheSizeMax = cacheSz;
         discSizeMax = folderSz;
         cacheSize = 0L;
@@ -63,11 +62,11 @@ public class LRUCache implements EvictionPolicy {
 
     // start here
     // Done work well (вроде)
-    public void OpenFolder(String path) {
+    public void openFolder(String path) {
         // Открываем собсно папку
         folder = new File(path);
 
-        // Идем по всем файлам в нем
+        // go throught all fiels
         for (File i : folder.listFiles()) {
             // Сюды читаем
             Node timeBlock = new Node();
@@ -83,13 +82,15 @@ public class LRUCache implements EvictionPolicy {
                         timeBlock.key = Long.parseLong(infoData[0]);
                         timeBlock.countLines = Long.parseLong(infoData[1]);
                         timeBlock.fileN = Long.parseLong(i.getName());
+                        timeBlock.prev = mru;
                         lastFileN = timeBlock.fileN;
                         counter++;
 
 
                         for (int j = 0; j < timeBlock.countLines; j++) {
-                            if (j != 0)
+                            if (j != 0) {
                                 timeBlock.text += "\n";
+                            }
                             timeBlock.text += scanner.nextLine();
                         }
 
@@ -128,14 +129,14 @@ public class LRUCache implements EvictionPolicy {
     private void removeStringFromFile(Node block) throws IOException {
         int listIndex = filesWithOne.indexOf(block.fileN);
         File inputFile = new File(folder.getPath() + "\\" + block.fileN);
-        File tempFile = new File(folder + "\\TempFile.txt");
-        BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
 
         if (listIndex != -1) {
             filesWithOne.remove(listIndex);
             inputFile.delete();
             return;
         }
+        File tempFile = new File(folder + "\\TempFile.txt");
+        BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
 
         filesWithOne.add(block.fileN);
 
@@ -144,26 +145,33 @@ public class LRUCache implements EvictionPolicy {
             String[] infoData = nums.split(" ");
 
             if (Long.parseLong(infoData[0]) == block.key) {
-                for (int i = 0; i < Long.parseLong(infoData[1]); i++)
+                for (int i = 0; i < Long.parseLong(infoData[1]); i++) {
                     scanner.nextLine();
+                }
+                nums = scanner.nextLine();
+                infoData = nums.split(" ");
+                writer.write(nums + "\n");
+            } else {
+                writer.write(nums + "\n");
             }
 
-            nums = scanner.nextLine();
-            infoData = nums.split(" ");
-            writer.write(nums + "\n");
             for (int j = 0; j < Long.parseLong(infoData[1]); j++) {
-                if (j != 0)
+                if (j != 0) {
                     writer.write("\n");
+                }
                 writer.write(scanner.nextLine());
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        } catch (NoSuchElementException e) {
+            writer.write("\n");
+            writer.close();
+            inputFile.delete();
+            tempFile.renameTo(inputFile);
         }
 
+        writer.write("\n");
         writer.close();
-
         inputFile.delete();
-        System.out.println(tempFile.renameTo(inputFile));
+        tempFile.renameTo(inputFile);
     }
 
     //0 - we just insert
@@ -172,30 +180,35 @@ public class LRUCache implements EvictionPolicy {
     // In block we need: text, fileN, key
     // Done
     private int clearData(Node block) throws IOException {
-        while (discSize + block.text.length() > discSizeMax) {
-            if (lru == null) {
+        while (discSize + appandingSize + block.text.length() > discSizeMax) {
+            if (mru.key == null) {
                 return 2;
             }
-            discSize -= readStringFromFile(lru).length();
-            discSize -= 4;
+
             if (lru.text != null) {
                 cacheSize -= lru.text.length();
+                discSize -= lru.text.length();
+            } else {
+                discSize -= readStringFromFile(lru).length();
             }
-            cacheSize -= 4;
+            discSize -= appandingSize;
+            cacheSize -= appandingSize;
             removeStringFromFile(lru);
             // Clear cach
             container.remove(lru.key);
             lru = lru.next;
-            lru.prev = null;
+            if (lru != null) {
+                lru.prev = null;
+            } else {
+                mru = new Node();
+                lru = mru;
+            }
         }
 
-        Long i = 0L;
-
-        if (cacheSize + block.text.length() > cacheSizeMax) {
+        if (cacheSize + appandingSize + block.text.length() > cacheSizeMax) {
             // Delete strings
-            for (Node currentNode = lru; currentNode != mru &&
-                    cacheSize + block.text.length() > cacheSizeMax;)
-            {
+            for (Node currentNode = lru; (currentNode != mru || mru.text != null)
+                    && cacheSize + appandingSize > cacheSizeMax;) {
                 if (currentNode.text != null) {
                     cacheSize -= currentNode.text.length();
                     currentNode.text = null;
@@ -204,14 +217,15 @@ public class LRUCache implements EvictionPolicy {
             }
 
             // Delete files
-            for (Node currentNode = lru; currentNode != mru &&
-                    cacheSize + block.text.length() > cacheSizeMax;) {
-                discSize -= readStringFromFile(lru).length();
-                discSize -= 4;
+            while (mru != null && cacheSize + appandingSize > cacheSizeMax) {
                 if (lru.text != null) {
                     cacheSize -= lru.text.length();
+                    discSize -= lru.text.length();
+                } else {
+                    discSize -= readStringFromFile(lru).length();
                 }
-                cacheSize -= 4;
+                discSize -= appandingSize;
+                cacheSize -= appandingSize;
                 removeStringFromFile(lru);
                 // Clear cach
                 container.remove(lru.key);
@@ -219,10 +233,13 @@ public class LRUCache implements EvictionPolicy {
                 lru.prev = null;
             }
 
-            if (cacheSize + block.text.length() > cacheSizeMax)
+
+            if (cacheSize + appandingSize > cacheSizeMax) {
                 return 2;
-            if (cacheSize + 4 > cacheSizeMax)
+            }
+            if (cacheSize + appandingSize + block.text.length() > cacheSizeMax) {
                 return 1;
+            }
         }
         return 0;
     }
@@ -236,15 +253,17 @@ public class LRUCache implements EvictionPolicy {
             String[] infoData = nums.split(" ");
 
             if (Long.parseLong(infoData[0]) != block.key) {
-                for (int i = 0; i < Long.parseLong(infoData[1]); i++)
+                for (int i = 0; i < Long.parseLong(infoData[1]); i++) {
                     scanner.nextLine();
+                }
                 nums = scanner.nextLine();
                 infoData = nums.split(" ");
             }
 
             for (int j = 0; j < Long.parseLong(infoData[1]); j++) {
-                if (j != 0)
+                if (j != 0) {
                     text += "\n";
+                }
                 text += scanner.nextLine();
             }
         } catch (FileNotFoundException e) {
@@ -254,10 +273,21 @@ public class LRUCache implements EvictionPolicy {
         return text;
     }
 
+    private static long countLines(String str) {
+        Matcher m = Pattern.compile("\r\n|\r|\n").matcher(str);
+        Long lines = 1L;
+        while (m.find()) {
+            lines++;
+        }
+
+        return (long) lines;
+    }
+
     //Done, work
     private Long getFreeFileN() {
-        if (filesWithOne.size() > 0)
+        if (filesWithOne.size() > 0) {
             return filesWithOne.poll();
+        }
         lastFileN++;
         File f = new File(folder.getPath() + "\\" + lastFileN);
         try {
@@ -267,12 +297,6 @@ public class LRUCache implements EvictionPolicy {
         }
         filesWithOne.add(lastFileN);
         return lastFileN;
-    }
-    // end here
-
-    private static long countLines(String str){
-        String[] lines = str.split("\r\n|\r|\n");
-        return  lines.length;
     }
 
     // Done
@@ -308,7 +332,11 @@ public class LRUCache implements EvictionPolicy {
         mru = tempNode;
         mru.next = null;
 
-        return tempNode.text;
+        if (tempNode.text != null) {
+            return tempNode.text;
+        } else {
+            return readStringFromFile(tempNode);
+        }
     }
 
     public String put(Long key, String value) throws IOException {
@@ -324,9 +352,19 @@ public class LRUCache implements EvictionPolicy {
         if (container.containsKey(key)) {
             if (container.get(key).text != null) {
                 ret = container.get(key).text;
+                cacheSize -= ret.length();
             } else {
                 ret = readStringFromFile(myNode);
             }
+
+            discSize -= appandingSize;
+            discSize -= ret.length();
+            cacheSize -= appandingSize;
+            removeStringFromFile(container.get(key));
+            get(key);
+            mru = mru.prev;
+            mru.next = null;
+            container.remove(key);
         }
 
         int todo = clearData(myNode);
@@ -335,20 +373,23 @@ public class LRUCache implements EvictionPolicy {
 
         if (todo == 2) {
             return null;
-        } else if (todo == 1) {
+        }
+
+        myNode.fileN = getFreeFileN();
+        addStringToFile(myNode);
+
+        if (todo == 1) {
             discSize += myNode.text.length();
             myNode.text = null;
         } else {
             discSize += myNode.text.length();
             cacheSize += myNode.text.length();
         }
-
-        discSize += 4;
-        cacheSize += 4;
+        discSize += appandingSize;
+        cacheSize += appandingSize;
 
         // Put the new node at the right-most end of the linked-list
         // Put in cache and disk
-        addStringToFile(myNode);
         mru.next = myNode;
         container.put(key, myNode);
         mru = myNode;
@@ -357,17 +398,12 @@ public class LRUCache implements EvictionPolicy {
         if (lru.key == null) {
             lru = mru;
         }
-
         return ret;
     }
 
     // In block: text, key, countLines, fileN
     public void putFromFolder(Node block) throws IOException {
-
-        // Prephere return
         int todo = clearData(block);
-        // // Add size controller
-
         if (todo == 2) {
             return;
         } else if (todo == 1) {
@@ -378,19 +414,16 @@ public class LRUCache implements EvictionPolicy {
             cacheSize += block.text.length();
         }
 
-        discSize += 4;
-        cacheSize += 4;
+        discSize += appandingSize;
+        cacheSize += appandingSize;
 
-        // Put the new node at the right-most end of the linked-list
-        // Put in cache and disk
-        addStringToFile(block);
         mru.next = block;
         container.put(block.key, block);
         mru = block;
 
         // if it is first
         if (lru.key == null) {
-            lru = mru;
+            lru = block;
         }
     }
 }

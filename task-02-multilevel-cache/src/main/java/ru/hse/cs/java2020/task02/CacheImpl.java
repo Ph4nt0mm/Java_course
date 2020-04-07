@@ -7,8 +7,8 @@ public class CacheImpl {
         CacheImpl(long memorySize, long diskSize,
                   String path, EvictionPolicy pol) throws IOException {
                 policy = pol;
-                policy.SetSizes(memorySize, diskSize);
-                policy.OpenFolder(path);
+                policy.setSizes(memorySize, diskSize);
+                policy.openFolder(path);
         }
         public String get(Long k) {
                 return policy.get(k);
