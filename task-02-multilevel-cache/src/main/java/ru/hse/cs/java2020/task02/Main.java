@@ -13,7 +13,7 @@ public class Main {
 
         CacheImpl cacheObj = new CacheImpl(TEST_VAL,
                 TEST_BIG_VAL, "E:\\trash\\", lFUintExample);
-
+// forpull
 //        System.out.println(cacheObj.put(7L, "aaaa"));
 //        System.out.println(cacheObj.put(8L, "bbbb"));
 //        System.out.println(cacheObj.put(9L, "cccc"));
