@@ -2,5 +2,26 @@ version '1.0'
 
 mainClassName = 'ru.hse.cs.java2020.task03.Main'
 
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+
 dependencies {
+    compile group: 'org.telegram', name: 'telegrambots', version: '4.8.1'
+
+    implementation 'org.postgresql:postgresql:42.2.12'
+
+    implementation 'com.google.code.gson:gson:2.8.6'
+    compile 'org.jsoup:jsoup:1.13.1'
+
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.4.2')
+    testRuntime('org.junit.jupiter:junit-jupiter-engine:5.4.2')
+    testCompile "org.mockito:mockito-core:2.+"
+}
+
+test {
+    useJUnitPlatform()
+    testLogging.showStandardStreams = true
 }
