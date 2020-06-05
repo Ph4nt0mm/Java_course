@@ -83,7 +83,7 @@ public class Tracker {
         } catch (IOException e) {
             if (con.getResponseCode() == UNAUTHORIZED_ERROR || con.getResponseCode() == FORBIDDEN_ERROR
                     || con.getResponseCode() == VALIDATION_ERROR) {
-                throw new LoginEx ();
+                throw new LoginEx();
             }
             e.printStackTrace();
         } finally {
@@ -120,7 +120,7 @@ public class Tracker {
         } catch (IOException e) {
             if (con.getResponseCode() == UNAUTHORIZED_ERROR || con.getResponseCode() == FORBIDDEN_ERROR
                     || con.getResponseCode() == VALIDATION_ERROR) {
-                throw new LoginEx ();
+                throw new LoginEx();
             }
             e.printStackTrace();
             throw e;
@@ -193,7 +193,7 @@ public class Tracker {
         } catch (IOException e) {
             if (con.getResponseCode() == UNAUTHORIZED_ERROR || con.getResponseCode() == FORBIDDEN_ERROR
                     || con.getResponseCode() == VALIDATION_ERROR) {
-                throw new LoginEx ();
+                throw new LoginEx();
             }
             e.printStackTrace();
             throw e;
@@ -225,7 +225,7 @@ public class Tracker {
         } catch (IOException e) {
             if (con.getResponseCode() == UNAUTHORIZED_ERROR || con.getResponseCode() == FORBIDDEN_ERROR
                     || con.getResponseCode() == VALIDATION_ERROR) {
-                throw new LoginEx ();
+                throw new LoginEx();
             }
             e.printStackTrace();
             throw e;
