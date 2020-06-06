@@ -20,6 +20,10 @@ public class DataBase {
         }
     }
 
+    public DataBase() {
+
+    }
+
     void stop() {
         try {
             connection.close();
@@ -49,7 +53,7 @@ public class DataBase {
         return null;
     }
 
-    public void addNewChart(String chatId) throws SQLException {
+    public void addNewChart(String chatId) {
         try {
             String req = "INSERT INTO public.\"javaDB\"(chat_id, statem) VALUES ('" + chatId + "', 'LOGINING')";
             statement.executeUpdate(req);

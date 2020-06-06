@@ -22,7 +22,7 @@ public class MassageManager {
         this.dataBase = dataBase;
     }
 
-    void run() {
+    public void run() {
         while (true) {
             try {
                 Thread.sleep(TIME_UPDATE);
@@ -39,7 +39,7 @@ public class MassageManager {
         }
     }
 
-    private void maessageManage(ArrayList<String> message) throws SQLException, MalformedURLException {
+    void maessageManage(ArrayList<String> message) throws SQLException, MalformedURLException {
         String chatId = message.get(0);
         String messageText = message.get(1);
         DataBaseResponse chatInfo = dataBase.getInfo(chatId);
@@ -139,15 +139,11 @@ public class MassageManager {
                     break;
                 case GETTING_TASKS:
                     String nextPage;
-                    if (messageText.equals("get")) {
-                        getNextTaskPage(chatId, null, chatInfo);
+                    nextPage = chatInfo.getTmpInfo();
+                    if (!nextPage.equals("no") && messageText.equals("next")) {
+                        getNextTaskPage(chatId, nextPage, chatInfo);
                     } else {
-                        nextPage = chatInfo.getTmpInfo();
-                        if (!nextPage.equals("no") && messageText.equals("next")) {
-                            getNextTaskPage(chatId, nextPage, chatInfo);
-                        } else {
-                            getNextTaskPage(chatId, "back", chatInfo);
-                        }
+                        getNextTaskPage(chatId, "back", chatInfo);
                     }
                     break;
                 case CHECKING_TASK:
