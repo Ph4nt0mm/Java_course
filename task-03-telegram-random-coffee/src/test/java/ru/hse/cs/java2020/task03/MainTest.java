@@ -4,22 +4,20 @@ import org.glassfish.grizzly.utils.Pair;
 import org.junit.Test;
 import org.junit.jupiter.api.Tag;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
 public class MainTest {
     class BotModifiered extends Bot {
-        public ArrayList<Pair<String, String>> sendedMessage = new ArrayList<>();
-        public ArrayList<String> sendedButtons;
-        private List<ArrayList<String>> updates = new ArrayList<>() {};
+        private List<Pair<String, String>> sendedMessage = new ArrayList<>();
+        private List<String> sendedButtons;
+        private List<ArrayList<String>> updates = new ArrayList<>();
 
         public synchronized void sendMsg(String chatId, String s, ArrayList<String> buttons) {
             Pair<String, String> toAdd = new Pair<>();
             toAdd.setFirst(chatId);
             toAdd.setSecond(s);
-            System.out.println(chatId + " " +  s);
             sendedMessage.add(toAdd);
             sendedButtons = buttons;
         }
@@ -54,10 +52,10 @@ public class MainTest {
     }
 
     class DataBaseModi extends DataBase {
-        DataBaseResponse dataBaseResponse = new DataBaseResponse();
-        String chatId;
-        String changeField;
-        String changeData;
+        private DataBaseResponse dataBaseResponse = new DataBaseResponse();
+        private String chatId;
+        private String changeField;
+        private String changeData;
 
         public void setResponse(DataBaseResponse response) {
             dataBaseResponse = response;
@@ -84,6 +82,8 @@ public class MainTest {
             this.changeData = changeData;
         }
     }
+
+/*                  Tests begun!                */
 
     @Test
     @Tag("test")
@@ -138,63 +138,142 @@ public class MainTest {
 
     @Test
     @Tag("tracker")
-    public void getFullTask() {
+    public void getListTaskTwoPages() {
         DataBaseModi dataBaseModi = new DataBaseModi();
         BotModifiered botModifiered = new BotModifiered();
         MassageManagerModi massageManagerModi = new MassageManagerModi();
         massageManagerModi.init(dataBaseModi, botModifiered, new Tracker());
 
-        // Not existing chart
+        // Setup chart
         botModifiered.addUpdate("1", "Get tasks");
         DataBaseResponse dataBaseResponse = new DataBaseResponse();
         dataBaseResponse.setState("IN_MAIN_MENU");
         dataBaseResponse.setOrgId("3950619");
         dataBaseResponse.setOathToken("AgAAAAAEHRaeAAZa1OL5ToMVW0NBm4KDvb6uoPk");
         dataBaseModi.setResponse(dataBaseResponse);
-
+        // Get response
         massageManagerModi.run(botModifiered);
-        System.out.println(botModifiered.sendedMessage.get(0).getFirst());
-        System.out.println(botModifiered.sendedMessage.get(0).getSecond());
+
+        // Check response
+        List<Pair<String, String>> expectationMessage = new ArrayList<>();
+        expectationMessage.add(new Pair<>("1", "ORG-13 full"));
+        expectationMessage.add(new Pair<>("1", "ORG-10 min"));
+        expectationMessage.add(new Pair<>("1", "ORG-16 jh"));
+        expectationMessage.add(new Pair<>("1", "Get next?"));
+
+        List<String> expectationButtons = new ArrayList<>();
+        expectationButtons.add("next");
+        expectationButtons.add("back");
+
+        for (Integer i = 0; i < expectationMessage.size(); i++) {
+            assertEquals(expectationMessage.get(i).getFirst(), botModifiered.sendedMessage.get(i).getFirst());
+            assertEquals(expectationMessage.get(i).getSecond(), botModifiered.sendedMessage.get(i).getSecond());
+        }
+        assertEquals(expectationButtons, botModifiered.sendedButtons);
+
+        botModifiered.sendedMessage.clear();
+        expectationMessage.clear();
+        // second page
+        botModifiered.addUpdate("1", "next");
+        dataBaseResponse.setState("GETTING_TASKS");
+        dataBaseResponse.setTmpInfo(dataBaseModi.changeData);
+        dataBaseModi.setResponse(dataBaseResponse);
+        massageManagerModi.run(botModifiered);
+        // Check response
+        expectationMessage.add(new Pair<>("1", "ONER-3 full add"));
+        expectationMessage.add(new Pair<>("1", "ORG-9 no description"));
+        expectationMessage.add(new Pair<>("1", "ONER-1 no comments"));
+        expectationMessage.add(new Pair<>("1", "Get next?"));
+
+        for (Integer i = 0; i < expectationMessage.size(); i++) {
+            assertEquals(expectationMessage.get(i).getFirst(), botModifiered.sendedMessage.get(i).getFirst());
+            assertEquals(expectationMessage.get(i).getSecond(), botModifiered.sendedMessage.get(i).getSecond());
+        }
+        assertEquals(expectationButtons, botModifiered.sendedButtons);
     }
 
     @Test
     @Tag("tracker")
-    public void getMinTask() {}
+    public void getFullTask() {
+        DataBaseModi dataBaseModi = new DataBaseModi();
+        BotModifiered botModifiered = new BotModifiered();
+        MassageManagerModi massageManagerModi = new MassageManagerModi();
+        massageManagerModi.init(dataBaseModi, botModifiered, new Tracker());
+
+        // Setup chart
+//        botModifiered.addUpdate("1", "Get tasks");
+        DataBaseResponse dataBaseResponse = new DataBaseResponse();
+        dataBaseResponse.setState("CHECKING_TASK");
+        dataBaseResponse.setOrgId("3950619");
+        dataBaseResponse.setOathToken("AgAAAAAEHRaeAAZa1OL5ToMVW0NBm4KDvb6uoPk");
+        dataBaseModi.setResponse(dataBaseResponse);
+
+
+        botModifiered.addUpdate("1", "ORG-13");
+        // Get response
+        massageManagerModi.run(botModifiered);
+
+        // Check response
+        List<Pair<String, String>> expectationMessage = new ArrayList<>();
+        expectationMessage.add(new Pair<>("1", "Task name: full"));
+        expectationMessage.add(new Pair<>("1", "Task author: Fedor Tropin"));
+        expectationMessage.add(new Pair<>("1", "Task executor: Fedor Tropin"));
+        expectationMessage.add(new Pair<>("1", "Task description: descrip"));
+        expectationMessage.add(new Pair<>("1", "Comments:\nfirst\nsecond\n"));
+        expectationMessage.add(new Pair<>("1", "Watchers:\nFedor Tropin\nKotik IsInterneta\n"));
+        expectationMessage.add(new Pair<>("1", "Welcome to menu"));
+
+        List<String> expectationButtons = new ArrayList<>();
+        expectationButtons.add("Add task");
+        expectationButtons.add("Get tasks");
+        expectationButtons.add("Check task");
+        expectationButtons.add("Exit");
+
+        for (Integer i = 0; i < expectationMessage.size(); i++) {
+            assertEquals(expectationMessage.get(i).getFirst(), botModifiered.sendedMessage.get(i).getFirst());
+            assertEquals(expectationMessage.get(i).getSecond(), botModifiered.sendedMessage.get(i).getSecond());
+        }
+//        assertTrue(isEqual);
+        assertEquals(expectationButtons, botModifiered.sendedButtons);
+    }
 
     @Test
     @Tag("tracker")
-    public void getNotExistingTask() {}
+    public void getMinTask() {
+        DataBaseModi dataBaseModi = new DataBaseModi();
+        BotModifiered botModifiered = new BotModifiered();
+        MassageManagerModi massageManagerModi = new MassageManagerModi();
+        massageManagerModi.init(dataBaseModi, botModifiered, new Tracker());
 
-    @Test
-    @Tag("tracker")
-    public void getTaskListTwoLists() {}
+        // Setup chart
+//        botModifiered.addUpdate("1", "Get tasks");
+        DataBaseResponse dataBaseResponse = new DataBaseResponse();
+        dataBaseResponse.setState("CHECKING_TASK");
+        dataBaseResponse.setOrgId("3950619");
+        dataBaseResponse.setOathToken("AgAAAAAEHRaeAAZa1OL5ToMVW0NBm4KDvb6uoPk");
+        dataBaseModi.setResponse(dataBaseResponse);
 
-    @Test
-    @Tag("tracker")
-    public void getTaskList() {}
+        botModifiered.addUpdate("1", "ORG-10");
+        // Get response
+        massageManagerModi.run(botModifiered);
+        // Check response
+        List<Pair<String, String>> expectationMessage = new ArrayList<>();
+        expectationMessage.add(new Pair<>("1", "Task name: min"));
+        expectationMessage.add(new Pair<>("1", "Task author: Fedor Tropin"));
+        expectationMessage.add(new Pair<>("1", "Task executor: Fedor Tropin"));
+        expectationMessage.add(new Pair<>("1", "Welcome to menu"));
 
-    @Test
-    @Tag("tracker")
-    public void createTask() {}
+        List<String> expectationButtons = new ArrayList<>();
+        expectationButtons.add("Add task");
+        expectationButtons.add("Get tasks");
+        expectationButtons.add("Check task");
+        expectationButtons.add("Exit");
 
-    @Test
-    @Tag("tracker")
-    public void checkCreatedTask() {}
-
-    @Test
-    @Tag("tracker")
-    public void createTaskWithSelf() {}
-
-    @Test
-    @Tag("tracker")
-    public void checkCreatedTaskWithSelf() {}
-
-    @Test
-    @Tag("tracker")
-    public void createTaskWithWrongData() {}
-
-    @Test
-    @Tag("tracker")
-    public void getTaskByWrongData() {}
-
+        for (Integer i = 0; i < expectationMessage.size(); i++) {
+            assertEquals(expectationMessage.get(i).getFirst(), botModifiered.sendedMessage.get(i).getFirst());
+            assertEquals(expectationMessage.get(i).getSecond(), botModifiered.sendedMessage.get(i).getSecond());
+        }
+//        assertTrue(isEqual);
+        assertEquals(expectationButtons, botModifiered.sendedButtons);
+    }
 }

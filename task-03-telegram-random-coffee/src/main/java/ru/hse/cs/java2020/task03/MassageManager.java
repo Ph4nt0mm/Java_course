@@ -249,7 +249,7 @@ public class MassageManager {
     }
 
     private void getTask(String chatId, String taskId, DataBaseResponse chatInfo) throws MalformedURLException, SQLException {
-        TaskInfo toSend = null;
+        TaskInfo toSend;
         try {
             toSend = tracker.getTask(taskId, chatInfo.getOathToken(), chatInfo.getOrgId());
         } catch (LoginEx e) {
