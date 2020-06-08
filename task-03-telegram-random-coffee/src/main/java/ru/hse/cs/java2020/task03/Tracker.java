@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 public class Tracker {
@@ -19,6 +18,9 @@ public class Tracker {
     private HttpURLConnection con = null;
     private static final String COUNT_JOBS_ON_PAGE = "3";
 
+    private static final int FORBIDDEN_ERROR = 403;
+    private static final int UNAUTHORIZED_ERROR = 401;
+    private static final int VALIDATION_ERROR = 422;
 
     private void initConnection(String token, String orgId) {
         con.setDoOutput(true);
@@ -29,7 +31,7 @@ public class Tracker {
         con.setRequestProperty("X-Org-Id", orgId);
     }
 
-    public PageJobRet requestPageJobs(String generatedUrl, String token, String orgId) throws MalformedURLException {
+    public PageJobRet requestPageJobs(String generatedUrl, String token, String orgId) throws IOException, LoginEx {
         URL url;
         PageJobRet pageJobRet = new PageJobRet();
 
@@ -79,6 +81,10 @@ public class Tracker {
                 e.printStackTrace();
             }
         } catch (IOException e) {
+            if (con.getResponseCode() == UNAUTHORIZED_ERROR || con.getResponseCode() == FORBIDDEN_ERROR
+                    || con.getResponseCode() == VALIDATION_ERROR) {
+                throw new LoginEx();
+            }
             e.printStackTrace();
         } finally {
             con.disconnect();
@@ -86,7 +92,7 @@ public class Tracker {
         return pageJobRet;
     }
 
-    public void createTask(String jsonString, String token, String orgId) throws MalformedURLException {
+    public void createTask(String jsonString, String token, String orgId) throws IOException, LoginEx {
         URL url = new URL(BASE_URL + "issues/");
 
         try {
@@ -108,16 +114,22 @@ public class Tracker {
                     System.out.println(responseLine);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Buffer read problem");
+                throw e;
             }
         } catch (IOException e) {
+            if (con.getResponseCode() == UNAUTHORIZED_ERROR || con.getResponseCode() == FORBIDDEN_ERROR
+                    || con.getResponseCode() == VALIDATION_ERROR) {
+                throw new LoginEx();
+            }
             e.printStackTrace();
+            throw e;
         } finally {
             con.disconnect();
         }
     }
 
-    public TaskInfo getTask(String taskId, String token, String orgId) throws MalformedURLException {
+    public TaskInfo getTask(String taskId, String token, String orgId) throws IOException, LoginEx {
         URL url = new URL(BASE_URL + "issues/" + taskId);
         TaskInfo taskInfoRet = new TaskInfo();
 
@@ -155,6 +167,7 @@ public class Tracker {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+                throw e;
             }
 
             url = new URL(BASE_URL + "issues/" + taskId + "/comments");
@@ -174,18 +187,23 @@ public class Tracker {
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                throw e;
             }
 
         } catch (IOException e) {
+            if (con.getResponseCode() == UNAUTHORIZED_ERROR || con.getResponseCode() == FORBIDDEN_ERROR
+                    || con.getResponseCode() == VALIDATION_ERROR) {
+                throw new LoginEx();
+            }
             e.printStackTrace();
+            throw e;
         } finally {
             con.disconnect();
         }
         return taskInfoRet;
     }
 
-    public String getSelfUid(String token, String orgId) throws MalformedURLException {
+    public String getSelfUid(String token, String orgId) throws IOException, LoginEx {
         URL url = new URL(BASE_URL + "myself");
         String ret = null;
         try {
@@ -202,9 +220,15 @@ public class Tracker {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+                throw e;
             }
         } catch (IOException e) {
+            if (con.getResponseCode() == UNAUTHORIZED_ERROR || con.getResponseCode() == FORBIDDEN_ERROR
+                    || con.getResponseCode() == VALIDATION_ERROR) {
+                throw new LoginEx();
+            }
             e.printStackTrace();
+            throw e;
         } finally {
             con.disconnect();
         }
