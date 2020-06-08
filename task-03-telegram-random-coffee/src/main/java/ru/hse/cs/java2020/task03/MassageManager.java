@@ -210,7 +210,7 @@ public class MassageManager {
     private void getNextTaskPage(String chatId, String todo, DataBaseResponse chatInfo) throws MalformedURLException,
             SQLException {
         PageJobRet pageJobres;
-        if (todo == null || todo != "back") {
+        if (todo == null || !todo.equals("back")) {
             try {
                 pageJobres = tracker.requestPageJobs(todo, chatInfo.getOathToken(), chatInfo.getOrgId());
             } catch (LoginEx e) {
